@@ -1,5 +1,6 @@
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as WebBrowser from 'expo-web-browser';
 import { NewsArticle } from '../types/news';
 import { ShareButton } from './ShareButton';
 import { getGradientForCoin } from '../services/unsplash';
@@ -13,6 +14,12 @@ interface NewsCardProps {
 export function NewsCard({ article }: NewsCardProps) {
   const gradientColors = getGradientForCoin(article.coins[0] || 'crypto');
   const hasImage = article.imageUrl !== null && article.imageUrl !== undefined && article.imageUrl !== '';
+
+  const handleHeadlinePress = async () => {
+    if (article.url) {
+      await WebBrowser.openBrowserAsync(article.url);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -43,9 +50,11 @@ export function NewsCard({ article }: NewsCardProps) {
       )}
 
       <View style={styles.content}>
-        <Text style={styles.headline} numberOfLines={3}>
-          {article.title}
-        </Text>
+        <TouchableOpacity onPress={handleHeadlinePress} activeOpacity={1}>
+          <Text style={styles.headline} numberOfLines={3}>
+            {article.title}
+          </Text>
+        </TouchableOpacity>
         <Text style={styles.summary}>{article.description}</Text>
         <Text style={styles.source}>{article.source}</Text>
       </View>
