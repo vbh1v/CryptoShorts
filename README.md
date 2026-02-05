@@ -68,12 +68,17 @@ The app is configured for easy deployment on Vercel:
 
 ## Features Implemented
 
-- ✅ Full-screen news cards
-- ✅ Vertical snap scrolling (each scroll = one card)
+- ✅ Full-screen news cards with gradients
+- ✅ Vertical snap scrolling (TikTok-style)
+- ✅ Pull-to-refresh for latest news
+- ✅ Infinite scroll (auto-loads more content)
+- ✅ Clickable headlines to read full articles
+- ✅ In-app browser for seamless reading
+- ✅ Bottom navigation bar
+- ✅ Share functionality on each card
 - ✅ Fallback news data for reliability
 - ✅ Error handling and loading states
-- ✅ Share functionality
-- ✅ Responsive design
+- ✅ Responsive design for all devices
 
 ## Contributing
 
