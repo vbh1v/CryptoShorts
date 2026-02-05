@@ -40,6 +40,7 @@ types/
 - **60-word limit**: `truncateToWords()` in coingecko.ts
 - **Coin detection**: Keyword matching for gradient fallbacks
 - **Image fallback**: Article image → Unsplash → Gradient with coin icon
+- **In-app browsing**: Headlines are clickable, open source URL in WebBrowser (native) or iframe overlay (web)
 
 ## APIs
 
@@ -59,6 +60,8 @@ GET https://api.coingecko.com/api/v3/news?page=1
 - TypeScript
 - react-native-reanimated (animations)
 - expo-linear-gradient (gradient backgrounds)
+- expo-web-browser (in-app browsing)
+- phosphor-react-native (modern icon set)
 
 ## Design Decisions
 
