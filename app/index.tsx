@@ -6,11 +6,9 @@ import {
   Text,
   ActivityIndicator,
   TouchableOpacity,
-  Dimensions,
   RefreshControl,
   Platform,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,8 +21,6 @@ import { useNews } from '../hooks/useNews';
 import { useBookmarks } from '../hooks/useBookmarks';
 import { NewsArticle } from '../types/news';
 
-const { height } = Dimensions.get('window');
-
 export default function HomeScreen() {
   const { articles, loading, refreshing, loadingMore, error, hasMore, refresh, loadMore } = useNews();
   const { isBookmarked, toggleBookmark } = useBookmarks();
@@ -33,66 +29,10 @@ export default function HomeScreen() {
   const [showHint, setShowHint] = useState(true);
   const insets = useSafeAreaInsets();
 
+  const { height: windowHeight } = useWindowDimensions();
   const flatListRef = useRef<FlatList>(null);
   const currentIndexRef = useRef(0);
-  const dragStartOffsetRef = useRef(0);
-  const isScrollingRef = useRef(false);
-
-  const onScrollBeginDrag = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      dragStartOffsetRef.current = e.nativeEvent.contentOffset.y;
-    },
-    []
-  );
-
-  const onScrollEndDrag = useCallback(
-    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      if (Platform.OS === 'web') return; // Web uses CSS snap scrolling
-      const offsetY = e.nativeEvent.contentOffset.y;
-      const diff = offsetY - dragStartOffsetRef.current;
-      const threshold = 10; // minimum pixels to register as a swipe
-
-      let nextIndex = currentIndexRef.current;
-      if (diff > threshold) {
-        nextIndex = Math.min(currentIndexRef.current + 1, articles.length - 1);
-      } else if (diff < -threshold) {
-        nextIndex = Math.max(currentIndexRef.current - 1, 0);
-      }
-
-      isScrollingRef.current = true;
-      flatListRef.current?.scrollToIndex({
-        index: nextIndex,
-        animated: true,
-      });
-
-      if (nextIndex !== currentIndexRef.current) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
-
-      currentIndexRef.current = nextIndex;
-      setCurrentIndex(nextIndex);
-      if (nextIndex > 0) {
-        setShowHint(false);
-      }
-
-      // Reset scrolling flag after animation completes
-      setTimeout(() => {
-        isScrollingRef.current = false;
-      }, 300);
-    },
-    [articles.length]
-  );
-
-  const onMomentumScrollBegin = useCallback(() => {
-    // On native, we handle scrolling ourselves via onScrollEndDrag.
-    // Cancel any momentum so the list doesn't overshoot.
-    if (Platform.OS !== 'web' && flatListRef.current) {
-      flatListRef.current.scrollToIndex({
-        index: currentIndexRef.current,
-        animated: true,
-      });
-    }
-  }, []);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
 
   // Add web-specific CSS for snap scrolling
   useEffect(() => {
@@ -100,31 +40,8 @@ export default function HomeScreen() {
       const style = document.createElement('style');
       style.textContent = `
         /* Hide scrollbar */
-        ::-webkit-scrollbar {
-          display: none;
-        }
-
-        /* Snap scrolling for web */
-        div[data-testid="flat-list"] {
-          scroll-snap-type: y mandatory !important;
-          overflow-y: scroll !important;
-          -webkit-overflow-scrolling: touch !important;
-        }
-
-        div[data-testid="flat-list"] > div {
-          scroll-snap-align: start !important;
-        }
-
-        /* Ensure full height items */
-        div[data-testid="flat-list"] > div > div {
-          height: 100vh !important;
-          scroll-snap-align: start !important;
-        }
-
-        /* Smooth scrolling */
-        html {
-          scroll-behavior: smooth;
-        }
+        ::-webkit-scrollbar { display: none; }
+        * { -ms-overflow-style: none; scrollbar-width: none; }
       `;
       document.head.appendChild(style);
 
@@ -138,6 +55,9 @@ export default function HomeScreen() {
     ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
         const idx = viewableItems[0].index;
+        if (idx !== currentIndexRef.current) {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        }
         currentIndexRef.current = idx;
         setCurrentIndex(idx);
         if (idx > 0) {
@@ -189,14 +109,10 @@ export default function HomeScreen() {
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         showsVerticalScrollIndicator={false}
-        snapToInterval={height}
-        snapToAlignment="start"
-        decelerationRate="fast"
+        pagingEnabled={Platform.OS !== 'web'}
+        bounces={false}
         onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
-        onScrollBeginDrag={onScrollBeginDrag}
-        onScrollEndDrag={onScrollEndDrag}
-        onMomentumScrollBegin={onMomentumScrollBegin}
+        viewabilityConfig={viewabilityConfig}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
@@ -208,8 +124,8 @@ export default function HomeScreen() {
           />
         }
         getItemLayout={(_, index) => ({
-          length: height,
-          offset: height * index,
+          length: windowHeight,
+          offset: windowHeight * index,
           index,
         })}
         onEndReached={loadMore}
@@ -222,7 +138,6 @@ export default function HomeScreen() {
             </View>
           ) : null
         }
-        // Web-specific props
         style={Platform.OS === 'web' ? styles.webList : undefined}
       />
       <TouchableOpacity
@@ -292,7 +207,9 @@ const styles = StyleSheet.create({
   },
   webList: {
     scrollSnapType: 'y mandatory',
-  },
+    overflowY: 'scroll',
+    overscrollBehavior: 'contain',
+  } as any,
   loadingMore: {
     position: 'absolute',
     bottom: 100,

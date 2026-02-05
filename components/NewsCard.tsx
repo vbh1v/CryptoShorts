@@ -1,12 +1,10 @@
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, Platform, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import { NewsArticle } from '../types/news';
 import { ShareButton } from './ShareButton';
 import { BookmarkButton } from './BookmarkButton';
 import { getGradientForCoin } from '../services/unsplash';
-
-const { width, height } = Dimensions.get('window');
 
 function timeAgo(dateString: string): string {
   const now = Date.now();
@@ -42,6 +40,7 @@ interface NewsCardProps {
 }
 
 export function NewsCard({ article, isBookmarked, onToggleBookmark }: NewsCardProps) {
+  const { width, height } = useWindowDimensions();
   const gradientColors = getGradientForCoin(article.coins[0] || 'crypto');
   const hasImage = article.imageUrl !== null && article.imageUrl !== undefined && article.imageUrl !== '';
 
@@ -52,9 +51,9 @@ export function NewsCard({ article, isBookmarked, onToggleBookmark }: NewsCardPr
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width, height }, Platform.OS === 'web' && ({ scrollSnapAlign: 'start' } as any)]}>
       {hasImage ? (
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { height: height * 0.4 }]}>
           <Image
             source={{ uri: article.imageUrl! }}
             style={styles.image}
@@ -69,7 +68,7 @@ export function NewsCard({ article, isBookmarked, onToggleBookmark }: NewsCardPr
       ) : (
         <LinearGradient
           colors={gradientColors as [string, string]}
-          style={styles.gradientContainer}
+          style={[styles.gradientContainer, { height: height * 0.4 }]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
@@ -103,12 +102,9 @@ export function NewsCard({ article, isBookmarked, onToggleBookmark }: NewsCardPr
 
 const styles = StyleSheet.create({
   container: {
-    width,
-    height,
     backgroundColor: '#000',
   },
   imageContainer: {
-    height: height * 0.4,
     width: '100%',
   },
   image: {
@@ -124,7 +120,6 @@ const styles = StyleSheet.create({
     height: 100,
   },
   gradientContainer: {
-    height: height * 0.4,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
