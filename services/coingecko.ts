@@ -42,14 +42,19 @@ function transformNewsItem(item: CoinGeckoNewsItem): NewsArticle {
   };
 }
 
-export async function fetchNews(): Promise<NewsArticle[]> {
+export async function fetchNews(page: number = 1): Promise<NewsArticle[]> {
   try {
+    // For pages beyond 3, return empty to indicate end
+    if (page > 3) {
+      return [];
+    }
+    
     // Try CoinGecko API first
-    const response = await fetch(`${COINGECKO_API}/news?page=1`);
+    const response = await fetch(`${COINGECKO_API}/news?page=${page}`);
 
     if (!response.ok) {
       console.warn(`CoinGecko API returned ${response.status}, using fallback data`);
-      return fallbackNews;
+      return page === 1 ? fallbackNews : [];
     }
 
     const data = await response.json();

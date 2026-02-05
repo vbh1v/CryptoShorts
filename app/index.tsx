@@ -20,7 +20,7 @@ import { NewsArticle } from '../types/news';
 const { height } = Dimensions.get('window');
 
 export default function HomeScreen() {
-  const { articles, loading, error, refresh } = useNews();
+  const { articles, loading, refreshing, loadingMore, error, hasMore, refresh, loadMore } = useNews();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const insets = useSafeAreaInsets();
@@ -119,10 +119,22 @@ export default function HomeScreen() {
         viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
         refreshControl={
           <RefreshControl
-            refreshing={loading}
+            refreshing={refreshing}
             onRefresh={refresh}
             tintColor="#fff"
+            colors={['#fff']} // Android
+            progressBackgroundColor="#333" // Android
           />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <View style={styles.loadingMore}>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.loadingMoreText}>Loading more news...</Text>
+            </View>
+          ) : null
         }
         getItemLayout={(_, index) => ({
           length: height,
@@ -182,5 +194,22 @@ const styles = StyleSheet.create({
   },
   webList: {
     scrollSnapType: 'y mandatory',
+  },
+  loadingMore: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  loadingMoreText: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    marginTop: 8,
+    fontSize: 14,
   },
 });
