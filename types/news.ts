@@ -14,9 +14,9 @@ export interface CoinGeckoNewsResponse {
 }
 
 export interface CoinGeckoNewsItem {
-  id: string;
+  id: number;
   title: string;
-  description: string;
+  description: string | null;
   url: string;
   thumb_2x: string | null;
   created_at: number;

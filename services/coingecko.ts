@@ -22,7 +22,7 @@ function truncateToWords(text: string, maxWords: number): string {
 
 function transformNewsItem(item: CoinGeckoNewsItem): NewsArticle {
   return {
-    id: item.id,
+    id: String(item.id),
     title: item.title,
     description: truncateToWords(item.description || '', 60),
     url: item.url,
@@ -35,7 +35,7 @@ function transformNewsItem(item: CoinGeckoNewsItem): NewsArticle {
 
 export async function fetchNews(): Promise<NewsArticle[]> {
   try {
-    const response = await fetch(`${COINGECKO_API}/news`);
+    const response = await fetch(`${COINGECKO_API}/news?page=1`);
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
