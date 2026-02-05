@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Bottom Nav</title>
+    <style>
+        body {
+            margin: 0;
+            background: #000;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        
+        .content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.95);
+            border-top: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 12px 20px;
+            padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        }
+        
+        .nav-button {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 8px;
+            min-width: 48px;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .nav-button.active {
+            color: #fff;
+        }
+        
+        .nav-button:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .nav-button svg {
+            width: 24px;
+            height: 24px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        CryptoShorts Nav Test
+    </div>
+    
+    <div class="bottom-nav">
+        <div class="nav-container">
+            <!-- Search Icon -->
+            <button class="nav-button">
+                <svg viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/>
+                </svg>
+            </button>
+            
+            <!-- Home Icon -->
+            <button class="nav-button active">
+                <svg viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M224,115.54V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.54a16,16,0,0,1,5.17-11.78l80-75.48a16,16,0,0,1,21.66,0l80,75.48A16,16,0,0,1,224,115.54Z"/>
+                </svg>
+            </button>
+            
+            <!-- User Icon -->
+            <button class="nav-button">
+                <svg viewBox="0 0 256 256" fill="currentColor">
+                    <path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+</body>
+</html>
