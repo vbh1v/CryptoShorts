@@ -1,4 +1,5 @@
 import { NewsArticle, CoinGeckoNewsItem } from '../types/news';
+import { fallbackNews } from './fallback-news';
 
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 
@@ -35,18 +36,27 @@ function transformNewsItem(item: CoinGeckoNewsItem): NewsArticle {
 
 export async function fetchNews(): Promise<NewsArticle[]> {
   try {
+    // Try CoinGecko API first
     const response = await fetch(`${COINGECKO_API}/news?page=1`);
 
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+      console.warn(`CoinGecko API returned ${response.status}, using fallback data`);
+      return fallbackNews;
     }
 
     const data = await response.json();
     const items: CoinGeckoNewsItem[] = data.data || [];
 
+    // If no data, use fallback
+    if (!items || items.length === 0) {
+      console.warn('No news items from API, using fallback data');
+      return fallbackNews;
+    }
+
     return items.map(transformNewsItem);
   } catch (error) {
-    console.error('Failed to fetch news:', error);
-    throw error;
+    console.error('Failed to fetch news, using fallback:', error);
+    // Return fallback news if API fails (CORS, network issues, etc)
+    return fallbackNews;
   }
 }

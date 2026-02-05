@@ -1,0 +1,16 @@
+{
+  "buildCommand": "expo export --platform web --output-dir web-build",
+  "outputDirectory": "web-build",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    }
+  ]
+}

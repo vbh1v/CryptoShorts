@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import {
   View,
   FlatList,
@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NewsCard } from '../components/NewsCard';
@@ -22,6 +23,46 @@ export default function HomeScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const insets = useSafeAreaInsets();
+
+  // Add web-specific CSS for snap scrolling
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      const style = document.createElement('style');
+      style.textContent = `
+        /* Hide scrollbar */
+        ::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Snap scrolling for web */
+        div[data-testid="flat-list"] {
+          scroll-snap-type: y mandatory !important;
+          overflow-y: scroll !important;
+          -webkit-overflow-scrolling: touch !important;
+        }
+        
+        div[data-testid="flat-list"] > div {
+          scroll-snap-align: start !important;
+        }
+        
+        /* Ensure full height items */
+        div[data-testid="flat-list"] > div > div {
+          height: 100vh !important;
+          scroll-snap-align: start !important;
+        }
+
+        /* Smooth scrolling */
+        html {
+          scroll-behavior: smooth;
+        }
+      `;
+      document.head.appendChild(style);
+      
+      return () => {
+        document.head.removeChild(style);
+      };
+    }
+  }, []);
 
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
@@ -87,6 +128,8 @@ export default function HomeScreen() {
           offset: height * index,
           index,
         })}
+        // Web-specific props
+        style={Platform.OS === 'web' ? styles.webList : undefined}
       />
       {currentIndex === 0 && articles.length > 1 && (
         <SwipeHint visible={showHint} />
@@ -128,5 +171,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  webList: {
+    scrollSnapType: 'y mandatory',
   },
 });

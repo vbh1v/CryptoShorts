@@ -12,7 +12,7 @@ interface NewsCardProps {
 
 export function NewsCard({ article }: NewsCardProps) {
   const gradientColors = getGradientForCoin(article.coins[0] || 'crypto');
-  const hasImage = article.imageUrl !== null;
+  const hasImage = article.imageUrl !== null && article.imageUrl !== undefined && article.imageUrl !== '';
 
   return (
     <View style={styles.container}>
@@ -22,6 +22,7 @@ export function NewsCard({ article }: NewsCardProps) {
             source={{ uri: article.imageUrl! }}
             style={styles.image}
             resizeMode="cover"
+            onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
           />
           <LinearGradient
             colors={['transparent', 'rgba(0,0,0,0.8)']}
