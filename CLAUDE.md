@@ -20,7 +20,8 @@ app/                  # Expo Router screens
 components/
 ├── NewsCard.tsx      # Full-screen news card (image + headline + summary)
 ├── ShareButton.tsx   # Native share functionality
-└── SwipeHint.tsx     # First-time user bounce animation
+├── SwipeHint.tsx     # First-time user bounce animation
+└── BottomNav.tsx     # Bottom navigation bar (search, home, user)
 
 hooks/
 └── useNews.ts        # Data fetching with loading/error states
@@ -65,6 +66,7 @@ GET https://api.coingecko.com/api/v3/news?page=1
 - **No authentication** - MVP focuses on content consumption
 - **Share only** - No bookmarks/likes to keep it simple
 - **Portrait locked** - Optimized for vertical scrolling
+- **Bottom navigation** - Search, Home, User tabs (navigation logic pending)
 
 ## Adding Features
 
