@@ -22,10 +22,18 @@ function truncateToWords(text: string, maxWords: number): string {
 }
 
 function transformNewsItem(item: CoinGeckoNewsItem): NewsArticle {
+  // Handle missing or short descriptions
+  let description = item.description || '';
+  
+  // If description is too short or empty, create one from the title
+  if (description.length < 50) {
+    description = `Read the full story about ${item.title.toLowerCase()} on ${item.news_site}. Stay updated with the latest cryptocurrency news and market insights.`;
+  }
+  
   return {
     id: String(item.id),
     title: item.title,
-    description: truncateToWords(item.description || '', 60),
+    description: truncateToWords(description, 60),
     url: item.url,
     imageUrl: item.thumb_2x || null,
     publishedAt: new Date(item.created_at * 1000).toISOString(),

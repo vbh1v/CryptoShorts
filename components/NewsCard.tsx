@@ -113,6 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: 'rgba(255, 255, 255, 0.85)',
     lineHeight: 26,
+    minHeight: 100, // Ensure consistent card layout
   },
   source: {
     marginTop: 'auto',
