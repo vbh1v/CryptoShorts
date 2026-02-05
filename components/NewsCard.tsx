@@ -109,6 +109,6 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     fontSize: 13,
     color: 'rgba(255, 255, 255, 0.5)',
-    paddingBottom: 60,
+    paddingBottom: 100, // Increased to accommodate bottom nav
   },
 });

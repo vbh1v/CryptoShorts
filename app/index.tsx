@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NewsCard } from '../components/NewsCard';
 import { SwipeHint } from '../components/SwipeHint';
+import { BottomNav } from '../components/BottomNav';
 import { useNews } from '../hooks/useNews';
 import { NewsArticle } from '../types/news';
 
@@ -134,6 +135,13 @@ export default function HomeScreen() {
       {currentIndex === 0 && articles.length > 1 && (
         <SwipeHint visible={showHint} />
       )}
+      <BottomNav 
+        activeTab="home"
+        onTabPress={(tab) => {
+          // Navigation will be added later
+          console.log('Tab pressed:', tab);
+        }}
+      />
     </View>
   );
 }
