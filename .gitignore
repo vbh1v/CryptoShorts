@@ -1,16 +1,12 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
 
 # Expo
 .expo/
 dist/
 web-build/
-expo-env.d.ts
 
 # Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -21,7 +17,7 @@ expo-env.d.ts
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -30,12 +26,22 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Local env files
 .env*.local
 
-# typescript
+# Typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Misc
+*.log
+.vscode/
+.idea/
+
+# Vercel
+.vercel/auth.json
+
+# Build files
+*.tar.gz
+deploy-prod.js
+deploy-vercel.js
+manual-deploy.js
