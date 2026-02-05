@@ -3,15 +3,45 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as WebBrowser from 'expo-web-browser';
 import { NewsArticle } from '../types/news';
 import { ShareButton } from './ShareButton';
+import { BookmarkButton } from './BookmarkButton';
 import { getGradientForCoin } from '../services/unsplash';
 
 const { width, height } = Dimensions.get('window');
 
-interface NewsCardProps {
-  article: NewsArticle;
+function timeAgo(dateString: string): string {
+  const now = Date.now();
+  const date = new Date(dateString).getTime();
+
+  if (isNaN(date)) return '';
+  if (date > now) return 'just now';
+
+  const seconds = Math.floor((now - date) / 1000);
+
+  if (seconds < 60) return 'just now';
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} min ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} ${days === 1 ? 'day' : 'days'} ago`;
+
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} ${months === 1 ? 'month' : 'months'} ago`;
+
+  const years = Math.floor(months / 12);
+  return `${years} ${years === 1 ? 'year' : 'years'} ago`;
 }
 
-export function NewsCard({ article }: NewsCardProps) {
+interface NewsCardProps {
+  article: NewsArticle;
+  isBookmarked?: boolean;
+  onToggleBookmark?: () => void;
+}
+
+export function NewsCard({ article, isBookmarked, onToggleBookmark }: NewsCardProps) {
   const gradientColors = getGradientForCoin(article.coins[0] || 'crypto');
   const hasImage = article.imageUrl !== null && article.imageUrl !== undefined && article.imageUrl !== '';
 
@@ -56,9 +86,16 @@ export function NewsCard({ article }: NewsCardProps) {
           </Text>
         </TouchableOpacity>
         <Text style={styles.summary}>{article.description}</Text>
-        <Text style={styles.source}>{article.source}</Text>
+        <Text style={styles.source}>{article.source} · {timeAgo(article.publishedAt)}</Text>
       </View>
 
+      {isBookmarked !== undefined && onToggleBookmark && (
+        <BookmarkButton
+          article={article}
+          isBookmarked={isBookmarked}
+          onToggle={onToggleBookmark}
+        />
+      )}
       <ShareButton title={article.title} url={article.url} />
     </View>
   );

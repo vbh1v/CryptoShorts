@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { NewsArticle } from '../types/news';
 import { fetchNews } from '../services/coingecko';
+import { fetchMessariNews } from '../services/messari';
 
 export function useNews() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
@@ -8,42 +9,64 @@ export function useNews() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const pageRef = useRef(1);
+  const loadingMoreRef = useRef(false);
 
   const loadNews = async (isRefresh = false) => {
     try {
       if (isRefresh) {
         setRefreshing(true);
-        setPage(1);
-      } else if (page === 1) {
+      } else {
         setLoading(true);
       }
-      
+
       setError(null);
-      console.log(`Fetching news page ${isRefresh ? 1 : page}...`);
-      const news = await fetchNews(isRefresh ? 1 : page);
-      console.log(`Loaded ${news.length} news articles`);
-      
-      if (news.length === 0) {
-        setHasMore(false);
-      } else {
-        if (isRefresh) {
-          setArticles(news);
-          setPage(2);
-          setHasMore(true);
-        } else {
-          setArticles(prev => page === 1 ? news : [...prev, ...news]);
+      pageRef.current = 1;
+      setHasMore(true);
+      console.log('Fetching news from CoinGecko and Messari...');
+
+      const results = await Promise.allSettled([
+        fetchNews(1),
+        fetchMessariNews(),
+      ]);
+
+      const coingeckoArticles = results[0].status === 'fulfilled' ? results[0].value : [];
+      const messariArticles = results[1].status === 'fulfilled' ? results[1].value : [];
+
+      if (results[0].status === 'rejected') {
+        console.warn('CoinGecko fetch failed:', results[0].reason);
+      }
+      if (results[1].status === 'rejected') {
+        console.warn('Messari fetch failed:', results[1].reason);
+      }
+
+      // Merge: CoinGecko first, then Messari (deduplicated by title similarity)
+      const merged = [...coingeckoArticles];
+      const existingTitles = new Set(
+        coingeckoArticles.map(a => a.title.toLowerCase().trim())
+      );
+      for (const article of messariArticles) {
+        if (!existingTitles.has(article.title.toLowerCase().trim())) {
+          merged.push(article);
         }
+      }
+
+      console.log(
+        `Loaded ${coingeckoArticles.length} CoinGecko + ${messariArticles.length} Messari articles (${merged.length} after dedup)`
+      );
+      setArticles(merged);
+      if (merged.length === 0) {
+        setHasMore(false);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load news';
       console.error('Error loading news:', err);
       setError(message);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setRefreshing(false);
-      setLoadingMore(false);
     }
   };
 
@@ -52,12 +75,35 @@ export function useNews() {
   }, []);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    
+    if (loadingMoreRef.current || !hasMore) return;
+    loadingMoreRef.current = true;
     setLoadingMore(true);
-    await loadNews(false);
-    setPage(prev => prev + 1);
-  }, [page, loadingMore, hasMore]);
+    try {
+      const nextPage = pageRef.current + 1;
+      console.log(`Loading more news, page ${nextPage}...`);
+      const newArticles = await fetchNews(nextPage);
+      if (newArticles.length === 0) {
+        setHasMore(false);
+      } else {
+        pageRef.current = nextPage;
+        setArticles(prev => {
+          const existingIds = new Set(prev.map(a => a.id));
+          const unique = newArticles.filter(a => !existingIds.has(a.id));
+          if (unique.length === 0) {
+            setHasMore(false);
+            return prev;
+          }
+          return [...prev, ...unique];
+        });
+      }
+    } catch (err) {
+      console.error('Error loading more news:', err);
+      setHasMore(false);
+    } finally {
+      setLoadingMore(false);
+      loadingMoreRef.current = false;
+    }
+  }, [hasMore]);
 
   useEffect(() => {
     loadNews();

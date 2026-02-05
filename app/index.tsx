@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   FlatList,
@@ -9,21 +9,90 @@ import {
   Dimensions,
   RefreshControl,
   Platform,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { NewsCard } from '../components/NewsCard';
 import { SwipeHint } from '../components/SwipeHint';
 import { BottomNav } from '../components/BottomNav';
 import { useNews } from '../hooks/useNews';
+import { useBookmarks } from '../hooks/useBookmarks';
 import { NewsArticle } from '../types/news';
 
 const { height } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { articles, loading, refreshing, loadingMore, error, hasMore, refresh, loadMore } = useNews();
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showHint, setShowHint] = useState(true);
   const insets = useSafeAreaInsets();
+
+  const flatListRef = useRef<FlatList>(null);
+  const currentIndexRef = useRef(0);
+  const dragStartOffsetRef = useRef(0);
+  const isScrollingRef = useRef(false);
+
+  const onScrollBeginDrag = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      dragStartOffsetRef.current = e.nativeEvent.contentOffset.y;
+    },
+    []
+  );
+
+  const onScrollEndDrag = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      if (Platform.OS === 'web') return; // Web uses CSS snap scrolling
+      const offsetY = e.nativeEvent.contentOffset.y;
+      const diff = offsetY - dragStartOffsetRef.current;
+      const threshold = 10; // minimum pixels to register as a swipe
+
+      let nextIndex = currentIndexRef.current;
+      if (diff > threshold) {
+        nextIndex = Math.min(currentIndexRef.current + 1, articles.length - 1);
+      } else if (diff < -threshold) {
+        nextIndex = Math.max(currentIndexRef.current - 1, 0);
+      }
+
+      isScrollingRef.current = true;
+      flatListRef.current?.scrollToIndex({
+        index: nextIndex,
+        animated: true,
+      });
+
+      if (nextIndex !== currentIndexRef.current) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
+      currentIndexRef.current = nextIndex;
+      setCurrentIndex(nextIndex);
+      if (nextIndex > 0) {
+        setShowHint(false);
+      }
+
+      // Reset scrolling flag after animation completes
+      setTimeout(() => {
+        isScrollingRef.current = false;
+      }, 300);
+    },
+    [articles.length]
+  );
+
+  const onMomentumScrollBegin = useCallback(() => {
+    // On native, we handle scrolling ourselves via onScrollEndDrag.
+    // Cancel any momentum so the list doesn't overshoot.
+    if (Platform.OS !== 'web' && flatListRef.current) {
+      flatListRef.current.scrollToIndex({
+        index: currentIndexRef.current,
+        animated: true,
+      });
+    }
+  }, []);
 
   // Add web-specific CSS for snap scrolling
   useEffect(() => {
@@ -34,18 +103,18 @@ export default function HomeScreen() {
         ::-webkit-scrollbar {
           display: none;
         }
-        
+
         /* Snap scrolling for web */
         div[data-testid="flat-list"] {
           scroll-snap-type: y mandatory !important;
           overflow-y: scroll !important;
           -webkit-overflow-scrolling: touch !important;
         }
-        
+
         div[data-testid="flat-list"] > div {
           scroll-snap-align: start !important;
         }
-        
+
         /* Ensure full height items */
         div[data-testid="flat-list"] > div > div {
           height: 100vh !important;
@@ -58,7 +127,7 @@ export default function HomeScreen() {
         }
       `;
       document.head.appendChild(style);
-      
+
       return () => {
         document.head.removeChild(style);
       };
@@ -68,8 +137,10 @@ export default function HomeScreen() {
   const onViewableItemsChanged = useCallback(
     ({ viewableItems }: { viewableItems: Array<{ index: number | null }> }) => {
       if (viewableItems.length > 0 && viewableItems[0].index !== null) {
-        setCurrentIndex(viewableItems[0].index);
-        if (viewableItems[0].index > 0) {
+        const idx = viewableItems[0].index;
+        currentIndexRef.current = idx;
+        setCurrentIndex(idx);
+        if (idx > 0) {
           setShowHint(false);
         }
       }
@@ -78,8 +149,14 @@ export default function HomeScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: NewsArticle }) => <NewsCard article={item} />,
-    []
+    ({ item }: { item: NewsArticle }) => (
+      <NewsCard
+        article={item}
+        isBookmarked={isBookmarked(item.id)}
+        onToggleBookmark={() => toggleBookmark(item)}
+      />
+    ),
+    [isBookmarked, toggleBookmark]
   );
 
   const keyExtractor = useCallback((item: NewsArticle) => item.id, []);
@@ -107,25 +184,34 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <FlatList
+        ref={flatListRef}
         data={articles}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        pagingEnabled
         showsVerticalScrollIndicator={false}
         snapToInterval={height}
         snapToAlignment="start"
         decelerationRate="fast"
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+        onScrollBeginDrag={onScrollBeginDrag}
+        onScrollEndDrag={onScrollEndDrag}
+        onMomentumScrollBegin={onMomentumScrollBegin}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={refresh}
             tintColor="#fff"
-            colors={['#fff']} // Android
-            progressBackgroundColor="#333" // Android
+            colors={['#fff']}
+            progressBackgroundColor="#333"
           />
         }
+        getItemLayout={(_, index) => ({
+          length: height,
+          offset: height * index,
+          index,
+        })}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
@@ -136,18 +222,19 @@ export default function HomeScreen() {
             </View>
           ) : null
         }
-        getItemLayout={(_, index) => ({
-          length: height,
-          offset: height * index,
-          index,
-        })}
         // Web-specific props
         style={Platform.OS === 'web' ? styles.webList : undefined}
       />
+      <TouchableOpacity
+        style={styles.savedButton}
+        onPress={() => router.push('/saved')}
+      >
+        <Ionicons name="bookmarks-outline" size={22} color="#fff" />
+      </TouchableOpacity>
       {currentIndex === 0 && articles.length > 1 && (
         <SwipeHint visible={showHint} />
       )}
-      <BottomNav 
+      <BottomNav
         activeTab="home"
         onTabPress={(tab) => {
           // Navigation will be added later
@@ -191,6 +278,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  savedButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   webList: {
     scrollSnapType: 'y mandatory',
